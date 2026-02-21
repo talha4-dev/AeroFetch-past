@@ -28,6 +28,7 @@ def get_video_info(url: str) -> dict:
     Fetch video metadata and available formats using yt-dlp.
     Returns title, thumbnail, duration, formats list.
     """
+    cookies_found = False
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
@@ -38,7 +39,7 @@ def get_video_info(url: str) -> dict:
         'referer': 'https://www.youtube.com/',
         'extractor_args': {
             'youtube': {
-                'player_client': ['web', 'mweb', 'android'],
+                'player_client': ['web', 'mweb', 'android', 'ios', 'web_embedded'],
             }
         },
         'geo_bypass': True,
@@ -60,7 +61,8 @@ def get_video_info(url: str) -> dict:
             if os.path.exists(alt_path):
                 cookie_path = alt_path
 
-    if os.path.exists(cookie_path):
+    cookies_found = os.path.exists(cookie_path)
+    if cookies_found:
         ydl_opts['cookiefile'] = cookie_path
 
     try:
@@ -137,8 +139,11 @@ def get_video_info(url: str) -> dict:
         elif 'sign in' in err_str.lower():
             msg = 'This content requires sign-in. It cannot be downloaded.'
         else:
-            msg = 'Could not fetch video info. Please check the URL and try again.'
-        return {'success': False, 'error': msg}
+            msg = 'Could not fetch video info.'
+        
+        # Append raw error for debugging
+        debug_msg = f"{msg} (Raw: {err_str[:150]}... | Cookies: {'Yes' if cookies_found else 'No'})"
+        return {'success': False, 'error': debug_msg}
     except Exception as e:
         return {'success': False, 'error': f'Unexpected error: {str(e)}'}
 
@@ -147,6 +152,7 @@ def download_video(url: str, format_id: str, output_format: str, quality: str) -
     """
     Download a video/audio file and return the file path.
     """
+    cookies_found = False
     os.makedirs(Config.DOWNLOAD_FOLDER, exist_ok=True)
 
     # Sanitize filename
@@ -202,7 +208,8 @@ def download_video(url: str, format_id: str, output_format: str, quality: str) -
             if os.path.exists(alt_path):
                 cookie_path = alt_path
 
-    if os.path.exists(cookie_path):
+    cookies_found = os.path.exists(cookie_path)
+    if cookies_found:
         ydl_opts['cookiefile'] = cookie_path
 
     try:
