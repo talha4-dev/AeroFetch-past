@@ -48,6 +48,10 @@ def get_video_info(url: str) -> dict:
         }
     }
 
+    # Use cookies file if available (bypasses YouTube Data Center IP block on Render)
+    if os.path.exists(Config.COOKIES_FILE):
+        ydl_opts['cookiefile'] = Config.COOKIES_FILE
+
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
@@ -175,6 +179,10 @@ def download_video(url: str, format_id: str, output_format: str, quality: str) -
                 'Accept-Language': 'en-US,en;q=0.5',
             }
         }
+
+    # Use cookies file if available (bypasses YouTube Data Center IP block on Render)
+    if os.path.exists(Config.COOKIES_FILE):
+        ydl_opts['cookiefile'] = Config.COOKIES_FILE
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:

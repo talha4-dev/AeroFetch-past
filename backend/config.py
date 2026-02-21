@@ -9,6 +9,8 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     DOWNLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'downloads')
     MAX_CONTENT_LENGTH = 500 * 1024 * 1024  # 500MB max
+    # Path to YouTube cookies file for yt-dlp authentication on cloud servers
+    COOKIES_FILE = os.environ.get('YOUTUBE_COOKIES_FILE', '/opt/render/project/src/cookies.txt')
     CORS_ORIGINS = [
         "https://aero-fetch-web-talha.vercel.app",
         "https://aerofetch-web-talha.vercel.app",
