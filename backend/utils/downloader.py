@@ -39,7 +39,6 @@ def get_video_info(url: str) -> dict:
         'extractor_args': {
             'youtube': {
                 'player_client': ['web', 'mweb', 'android'],
-                'skip': ['dash', 'hls']
             }
         },
         'http_headers': {
