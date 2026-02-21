@@ -4,97 +4,97 @@ import { useTheme } from '../context/ThemeContext';
 import { useState } from 'react';
 
 export default function NavBar() {
-    const { user, logout } = useAuth();
-    const { theme, toggleTheme } = useTheme();
-    const navigate = useNavigate();
-    const [menuOpen, setMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
 
-    const handleLogout = async () => {
-        await logout();
-        navigate('/');
-        setMenuOpen(false);
-    };
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+    setMenuOpen(false);
+  };
 
-    return (
-        <nav className="navbar">
-            <div className="navbar-inner">
-                {/* Logo */}
-                <Link to="/" className="navbar-logo">
-                    <div className="navbar-logo-icon">
-                        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                            <defs>
-                                <linearGradient id="logoGrad" x1="0" y1="0" x2="1" y2="1">
-                                    <stop offset="0%" stopColor="#6c63ff" />
-                                    <stop offset="100%" stopColor="#00d4aa" />
-                                </linearGradient>
-                            </defs>
-                            <path d="M14 2L24 8V20L14 26L4 20V8L14 2Z" fill="url(#logoGrad)" opacity="0.9" />
-                            <path d="M14 8v12M8 11.5l6 5.5 6-5.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                    </div>
-                    <span className="navbar-logo-text">Aero<span className="gradient-text">Fetch</span></span>
-                </Link>
+  return (
+    <nav className="navbar">
+      <div className="navbar-inner">
+        {/* Logo */}
+        <Link to="/" className="navbar-logo">
+          <div className="navbar-logo-icon">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <defs>
+                <linearGradient id="logoGrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#6c63ff" />
+                  <stop offset="100%" stopColor="#00d4aa" />
+                </linearGradient>
+              </defs>
+              <path d="M14 2L24 8V20L14 26L4 20V8L14 2Z" fill="url(#logoGrad)" opacity="0.9" />
+              <path d="M14 8v12M8 11.5l6 5.5 6-5.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <span className="navbar-logo-text">Aero<span className="gradient-text">Fetch</span></span>
+        </Link>
 
-                {/* Desktop Nav */}
-                <div className="navbar-links">
-                    {!user && (
-                        <>
-                            <a href="/#how-it-works" className="navbar-link">How It Works</a>
-                            <a href="/#features" className="navbar-link">Features</a>
-                        </>
-                    )}
+        {/* Desktop Nav */}
+        <div className="navbar-links">
+          {!user && (
+            <>
+              <a href="/#how-it-works" className="navbar-link">How It Works</a>
+              <a href="/#features" className="navbar-link">Features</a>
+            </>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="navbar-actions">
+          {/* Theme Toggle */}
+          <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
+            {theme === 'dark' ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" />
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                <line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" />
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            )}
+          </button>
+
+          {user ? (
+            <div className="navbar-user" onClick={() => setMenuOpen(!menuOpen)}>
+              <div className="navbar-avatar">
+                {(user.name || user.email)[0].toUpperCase()}
+              </div>
+              <span className="navbar-username">{user.name || user.email.split('@')[0]}</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+              {menuOpen && (
+                <div className="navbar-dropdown">
+                  <Link to="/dashboard" className="navbar-dropdown-item" onClick={() => setMenuOpen(false)}>
+                    <span>📊</span> Dashboard
+                  </Link>
+                  <button className="navbar-dropdown-item danger" onClick={handleLogout}>
+                    <span>🚪</span> Sign Out
+                  </button>
                 </div>
-
-                {/* Actions */}
-                <div className="navbar-actions">
-                    {/* Theme Toggle */}
-                    <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
-                        {theme === 'dark' ? (
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" />
-                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                                <line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" />
-                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-                            </svg>
-                        ) : (
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                            </svg>
-                        )}
-                    </button>
-
-                    {user ? (
-                        <div className="navbar-user" onClick={() => setMenuOpen(!menuOpen)}>
-                            <div className="navbar-avatar">
-                                {(user.name || user.email)[0].toUpperCase()}
-                            </div>
-                            <span className="navbar-username">{user.name || user.email.split('@')[0]}</span>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <polyline points="6 9 12 15 18 9" />
-                            </svg>
-                            {menuOpen && (
-                                <div className="navbar-dropdown">
-                                    <Link to="/dashboard" className="navbar-dropdown-item" onClick={() => setMenuOpen(false)}>
-                                        <span>📊</span> Dashboard
-                                    </Link>
-                                    <button className="navbar-dropdown-item danger" onClick={handleLogout}>
-                                        <span>🚪</span> Sign Out
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                            <Link to="/auth" className="btn-ghost">Log In</Link>
-                            <Link to="/auth?mode=register" className="btn-primary" style={{ padding: '10px 20px', fontSize: '14px' }}>
-                                Get Started
-                            </Link>
-                        </div>
-                    )}
-                </div>
+              )}
             </div>
+          ) : (
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <Link to="/auth" className="btn-ghost">Log In</Link>
+              <Link to="/auth?mode=register" className="btn-primary" style={{ padding: '10px 20px', fontSize: '14px' }}>
+                Get Started
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
 
-            <style>{`
+      <style>{`
         .navbar {
           position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
           height: var(--navbar-height);
@@ -177,19 +177,20 @@ export default function NavBar() {
           .navbar-dropdown { right: -8px; width: 180px; }
         }
         @media (max-width: 350px) {
-          .navbar-inner { padding: 0 10px; gap: 8px; }
-          .navbar-logo { font-size: 17px; gap: 6px; }
-          .navbar-logo-icon svg { width: 22px; height: 22px; }
-          .navbar-actions { gap: 6px; }
-          .theme-toggle { width: 32px; height: 32px; }
-          .theme-toggle svg { width: 16px; height: 16px; }
-          .btn-ghost { font-size: 13px; }
+          .navbar-inner { padding: 0 8px; gap: 4px; }
+          .navbar-logo { font-size: 15px; gap: 4px; }
+          .navbar-logo-icon svg { width: 18px; height: 18px; }
+          .navbar-actions { gap: 4px; }
+          .theme-toggle { width: 30px; height: 30px; }
+          .theme-toggle svg { width: 14px; height: 14px; }
+          .btn-ghost { font-size: 12px; padding: 4px 6px; }
           .btn-primary { 
-            padding: 8px 12px !important; 
-            font-size: 13px !important; 
+            padding: 6px 10px !important; 
+            font-size: 12px !important; 
+            letter-spacing: -0.01em;
           }
         }
       `}</style>
-        </nav>
-    );
+    </nav>
+  );
 }

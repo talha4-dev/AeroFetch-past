@@ -41,6 +41,7 @@ def get_video_info(url: str) -> dict:
                 'player_client': ['web', 'mweb', 'android'],
             }
         },
+        'geo_bypass': True,
         'http_headers': {
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.5',
