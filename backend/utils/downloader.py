@@ -40,8 +40,7 @@ def get_video_info(url: str) -> dict:
         'referer': 'https://www.youtube.com/',
         'extractor_args': {
             'youtube': {
-                'player_client': ['web', 'mweb', 'tv'],
-                'include_dash_manifest': False,
+                'player_client': ['tv', 'mweb'],
             }
         },
         'geo_bypass': True,
@@ -143,8 +142,8 @@ def get_video_info(url: str) -> dict:
         else:
             msg = 'Could not fetch video info.'
         
-        # Append raw error for debugging
-        debug_msg = f"{msg} (Raw: {err_str[:150]}... | Cookies: {'Yes' if cookies_found else 'No'})"
+        # Append full raw error for debugging
+        debug_msg = f"{msg} (Raw: {err_str} | Cookies: {'Yes' if cookies_found else 'No'})"
         return {'success': False, 'error': debug_msg}
     except Exception as e:
         return {'success': False, 'error': f'Unexpected error: {str(e)}'}
@@ -190,8 +189,7 @@ def download_video(url: str, format_id: str, output_format: str, quality: str) -
             'referer': 'https://www.youtube.com/',
             'extractor_args': {
                 'youtube': {
-                    'player_client': ['web', 'mweb', 'tv'],
-                    'include_dash_manifest': False,
+                    'player_client': ['tv', 'mweb'],
                 }
             },
             'http_headers': {
