@@ -36,6 +36,7 @@ def create_app():
     app.register_blueprint(download_bp, url_prefix='/api/download')
 
     # Health check
+    @app.route('/')
     @app.route('/api/health')
     def health():
         return jsonify({'status': 'ok', 'service': 'AeroFetch API', 'version': '1.0.0'}), 200

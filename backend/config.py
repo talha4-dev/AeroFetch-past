@@ -9,7 +9,12 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     DOWNLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'downloads')
     MAX_CONTENT_LENGTH = 500 * 1024 * 1024  # 500MB max
-    CORS_ORIGINS = '*'
+    CORS_ORIGINS = [
+        "https://aero-fetch-web-talha.vercel.app",
+        "https://aerofetch-web-talha.vercel.app",
+        "http://localhost:5173",
+        "http://localhost:5174"
+    ]
 
     # Google OAuth
     GOOGLE_CLIENT_ID = os.environ.get(
