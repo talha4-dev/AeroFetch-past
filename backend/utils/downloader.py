@@ -36,11 +36,13 @@ def get_video_info(url: str) -> dict:
         'skip_download': True,
         'check_formats': False,
         'nocheckcertificate': True,
-        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'check_formats': False,
         'referer': 'https://www.youtube.com/',
         'extractor_args': {
             'youtube': {
-                'player_client': ['tv', 'mweb'],
+                'player_client': ['android', 'ios', 'mweb', 'tv'],
+                'include_dash_manifest': True,
+                'include_hls_manifest': True,
             }
         },
         'geo_bypass': True,
@@ -185,11 +187,12 @@ def download_video(url: str, format_id: str, output_format: str, quality: str) -
             'no_warnings': True,
             'merge_output_format': 'mp4',
             'nocheckcertificate': True,
-            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
             'referer': 'https://www.youtube.com/',
             'extractor_args': {
                 'youtube': {
-                    'player_client': ['tv', 'mweb'],
+                    'player_client': ['android', 'ios', 'mweb', 'tv'],
+                    'include_dash_manifest': True,
+                    'include_hls_manifest': True,
                 }
             },
             'http_headers': {
