@@ -40,7 +40,8 @@ def get_video_info(url: str) -> dict:
         'referer': 'https://www.youtube.com/',
         'extractor_args': {
             'youtube': {
-                'player_client': ['web', 'mweb', 'android', 'ios', 'web_embedded'],
+                'player_client': ['web', 'mweb', 'tv'],
+                'include_dash_manifest': False,
             }
         },
         'geo_bypass': True,
@@ -189,7 +190,8 @@ def download_video(url: str, format_id: str, output_format: str, quality: str) -
             'referer': 'https://www.youtube.com/',
             'extractor_args': {
                 'youtube': {
-                    'player_client': ['web', 'mweb', 'android', 'ios', 'web_embedded'],
+                    'player_client': ['web', 'mweb', 'tv'],
+                    'include_dash_manifest': False,
                 }
             },
             'http_headers': {
