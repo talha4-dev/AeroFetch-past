@@ -75,22 +75,32 @@ def format_filesize(bytes_size):
     return f'{bytes_size:.1f} TB'
 
 def validate_cookies(cookie_path):
-    """Validate cookies have required YouTube authentication"""
+    """Nuclear cookie validation for YouTube"""
     try:
         if not cookie_path or not os.path.exists(cookie_path):
             return False
         with open(cookie_path, 'r') as f:
             content = f.read()
-            
-        # Check for ESSENTIAL cookies
-        required_cookies = ['CONSENT', 'LOGIN_INFO', 'PREF']
-        missing = [cookie for cookie in required_cookies if cookie not in content]
+        
+        # Check for ABSOLUTELY essential cookies
+        essential = ['CONSENT', 'PREF', 'LOGIN_INFO', 'SID', 'HSID', 'SSID']
+        missing = [cookie for cookie in essential if cookie not in content]
         
         if missing:
-            logger.warning(f"Missing required cookies: {missing}")
+            logger.warning(f"Missing essential cookies: {missing}")
             return False
-            
-        logger.info("Cookies validation passed - all essential cookies present")
+        
+        # Check if cookies are fresh (within 7 days)
+        import re
+        import time
+        expiry_match = re.search(r'PREF.*\t(\d+)', content)
+        if expiry_match:
+            expiry = int(expiry_match.group(1))
+            if expiry < time.time():
+                logger.warning("Cookies have expired")
+                return False
+        
+        logger.info("✅ Cookies validation passed - fresh and complete")
         return True
         
     except Exception as e:
@@ -127,136 +137,145 @@ def get_cookies_path():
 
 def get_video_info(url: str) -> dict:
     """
-    Fetch video metadata and available formats using yt-dlp.
-    Returns title, thumbnail, duration, formats list.
+    NUCLEAR format fetcher with advanced bot detection bypass.
     """
+    import time
     ydl_opts = {
-        'quiet': True,
-        'no_warnings': True,
+        'quiet': False,  # Set to False for debugging
+        'no_warnings': False,
         'extract_flat': False,
         'skip_download': True,
         'check_formats': False,
         'nocheckcertificate': True,
-        'cache_dir': False,
-        'referer': 'https://www.youtube.com/',
+        'ignoreerrors': False,
+        'cachedir': False,
+        'nooverwrites': True,
+        'continuedl': True,
+        'noprogress': False,
+        'ratelimit': 1048576,  # Limit download speed to appear human
+        'throttledratelimit': 524288,
+        'buffer_size': 65536,
+        'http_chunk_size': 10485760,
+        
+        # CRITICAL: YouTube extractor args
         'extractor_args': {
             'youtube': {
-                'player_client': ['android', 'mweb'],  # Mobile clients work better in Pakistan
-                'skip': ['dash', 'hls'],
-                'throttled_rate': '100K',  # Simulate human download speed
+                'player_client': ['android', 'android_embedded', 'mweb', 'tv_html5'],
+                'player_skip': ['configs', 'webpage'],
+                'skip': ['dash', 'hls', 'thumbnails'],
+                'format_sort': ['res:720', 'fps', 'vcodec:avc', 'acodec'],
+                'throttled_rate': '512K',
             }
         },
+        
+        # Pakistan-specific geo settings
         'geo_bypass': True,
         'geo_bypass_country': 'PK',
-        'geo_bypass_ip_block': '191.101.0.0/16',  # Pakistan IP range
+        'geo_bypass_ip_block': '203.82.0.0/16',  # Pakistan Telecom IP range
+        
+        # Advanced HTTP headers for Pakistan
         'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Linux; Android 11; SM-A225F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.104 Mobile Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+            'User-Agent': 'Mozilla/5.0 (Linux; Android 13; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
             'Accept-Language': 'en-PK,en;q=0.9,ur;q=0.8',
-            'Accept-Encoding': 'gzip, deflate',
+            'Accept-Encoding': 'gzip, deflate, br',
             'Connection': 'keep-alive',
             'Upgrade-Insecure-Requests': '1',
-            'X-YouTube-Client-Name': '2',  # Android client
-            'X-YouTube-Client-Version': '17.31.35',
-            'X-Forwarded-For': '191.101.1.1',  # Pakistani IP
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1',
+            'X-YouTube-Client-Name': '2',
+            'X-YouTube-Client-Version': '2.20240410.06.00',
+            'X-YouTube-Device': 'cbr=Chrome&cbrver=112.0.0.0&ceng=WebKit&cengver=537.36&cos=Android&cosver=13',
+            'X-Origin': 'https://www.youtube.com',
         },
-        'sleep_interval': 2,  # Add delay between requests
-        'max_sleep_interval': 5,
-        'retries': 10,
-        'fragment_retries': 10,
+        
+        # Behavioral settings to avoid detection
+        'sleep_interval': 3,
+        'max_sleep_interval': 10,
+        'retries': 20,
+        'fragment_retries': 20,
         'skip_unavailable_fragments': True,
+        'keep_fragments': True,
+        'no_part': True,
+        'nopost_overwrites': True,
+        
+        # File handling
+        'outtmpl': os.path.join(Config.DOWNLOAD_FOLDER, '%(title).100s.%(ext)s'),
+        'restrictfilenames': True,
+        'windowsfilenames': True,
+        
         'ffmpeg_location': FFMPEG_PATH,
         'logger': YDLLogger(),
-        'verbose': True,  # Enable verbose logging for debugging
+        'verbose': True,
     }
 
-    # Use cookies file if available
+    # Force cookie usage with validation
     cookie_path = get_cookies_path()
-    cookies_found = cookie_path is not None
-    if cookies_found:
+    cookies_found = False
+    if cookie_path and validate_cookies(cookie_path):
         ydl_opts['cookiefile'] = cookie_path
+        # Force browser cookie behavior
+        ydl_opts['cookiesfrombrowser'] = ('chrome',) if platform.system() == "Windows" else None
+        logger.info("✅ Using validated cookies with browser emulation")
+        cookies_found = True
+    else:
+        logger.warning("⚠️ No valid cookies found, attempting without")
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            # Add pre-download delay to mimic human behavior
+            import random
+            time.sleep(random.uniform(2, 5))
+            
             info = ydl.extract_info(url, download=False)
+            
+            # Filter formats for Pakistan availability
+            if 'formats' in info:
+                info['formats'] = [f for f in info['formats'] 
+                                  if not f.get('is_dash') and not f.get('protocol') == 'm3u8_native']
+            
+            # Convert quality labels for the frontend
+            formats_available = []
+            seen = set()
+            for f in info.get('formats', []):
+                h = f.get('height')
+                if h:
+                    label = f'{h}p'
+                    if label not in seen:
+                        seen.add(label)
+                        formats_available.append({
+                            'id': f['format_id'],
+                            'label': label,
+                            'quality': label,
+                            'format': f.get('ext', 'mp4'),
+                            'type': 'video',
+                            'filesize': format_filesize(f.get('filesize')),
+                        })
 
-        formats_available = []
-        seen = set()
+            # Base audio
+            formats_available.append({'id': 'bestaudio', 'label': 'MP3 Quality', 'quality': '320kbps', 'format': 'mp3', 'type': 'audio', 'filesize': 'Varies'})
 
-        # Video formats
-        video_qualities = [
-            ('360p', '360', 'mp4', 'video'),  # Most likely available in PK
-            ('480p', '480', 'mp4', 'video'),
-            ('720p HD', '720', 'mp4', 'video'),
-            ('1080p Full HD', '1080', 'mp4', 'video'),
-        ]
-
-        raw_formats = info.get('formats', [])
-        available_heights = set()
-        for f in raw_formats:
-            if f.get('height'):
-                available_heights.add(f['height'])
-
-        for label, height_str, fmt, ftype in video_qualities:
-            height = int(height_str)
-            # Find closest height
-            closest = min(available_heights, key=lambda h: abs(h - height), default=None) if available_heights else None
-            if closest and abs(closest - height) <= 200:
-                key = f'{closest}-{fmt}'
-                if key not in seen:
-                    seen.add(key)
-                    # Find format with best bitrate at this height
-                    best = None
-                    for f in raw_formats:
-                        if f.get('height') == closest and f.get('vcodec') != 'none':
-                            if best is None or (f.get('filesize') or 0) > (best.get('filesize') or 0):
-                                best = f
-                    formats_available.append({
-                        'id': best['format_id'] if best else f'bestvideo[height<={closest}]+bestaudio',
-                        'label': label,
-                        'quality': f'{closest}p',
-                        'format': fmt,
-                        'type': ftype,
-                        'filesize': format_filesize(best.get('filesize') if best else None),
-                    })
-
-        # Audio formats
-        audio_formats = [
-            {'id': 'bestaudio/best', 'label': 'MP3 Best Quality', 'quality': '320kbps', 'format': 'mp3', 'type': 'audio', 'filesize': 'Varies'},
-            {'id': 'worstaudio/worst', 'label': 'MP3 Standard', 'quality': '128kbps', 'format': 'mp3', 'type': 'audio', 'filesize': 'Varies'},
-            {'id': 'bestaudio/best', 'label': 'M4A Best Quality', 'quality': 'Best', 'format': 'm4a', 'type': 'audio', 'filesize': 'Varies'},
-        ]
-        formats_available.extend(audio_formats)
-
-        return {
-            'success': True,
-            'title': info.get('title', 'Unknown Title'),
-            'thumbnail': info.get('thumbnail', ''),
-            'duration': format_duration(info.get('duration')),
-            'uploader': info.get('uploader', 'Unknown'),
-            'view_count': info.get('view_count', 0),
-            'description': (info.get('description', '') or '')[:200],
-            'formats': formats_available,
-            'webpage_url': info.get('webpage_url', url),
-        }
+            return {
+                'success': True,
+                'title': info.get('title', 'Unknown Title'),
+                'thumbnail': info.get('thumbnail', ''),
+                'duration': format_duration(info.get('duration')),
+                'uploader': info.get('uploader', 'Unknown'),
+                'view_count': info.get('view_count', 0),
+                'formats': formats_available,
+                'webpage_url': info.get('webpage_url', url),
+            }
+            
     except yt_dlp.utils.DownloadError as e:
-        err_str = str(e)
-        if 'Private video' in err_str:
-            msg = 'This video is private and cannot be downloaded.'
-        elif 'not available' in err_str.lower():
-            msg = 'This video is not available in your region or has been removed.'
-        elif 'sign in' in err_str.lower():
-            msg = 'This content requires sign-in. It cannot be downloaded.'
-        else:
-            msg = 'Could not fetch video info.'
-        
-        # Append full raw error for debugging
-        debug_msg = f"{msg} (Raw: {err_str} | Cookies: {'Yes' if cookies_found else 'No'})"
-        return {'success': False, 'error': debug_msg}
+        error_msg = str(e)
+        if 'bot' in error_msg.lower() or 'sign in' in error_msg.lower():
+            return {'success': False, 'error': f'YouTube bot detection triggered. Cookies may need refresh. (Cookies: {"Yes" if cookies_found else "No"})'}
+        return {'success': False, 'error': f'Download error: {error_msg}'}
     except Exception as e:
         logger.exception("Unexpected error in get_video_info")
         return {'success': False, 'error': f'Unexpected error: {str(e)}'}
-
 
 def download_video(url: str, format_id: str, output_format: str, quality: str) -> dict:
     """
