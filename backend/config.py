@@ -10,8 +10,10 @@ class Config:
     DOWNLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'downloads')
     LOG_FOLDER = os.path.join(os.path.dirname(__file__), 'logs')
     MAX_CONTENT_LENGTH = 500 * 1024 * 1024  # 500MB max
-    # Path to YouTube cookies file. On Render, name the secret file 'cookies.txt'
-    COOKIES_FILE = os.environ.get('YOUTUBE_COOKIES_FILE', 'cookies.txt')
+    # Path to YouTube cookies file. On Render, secret files are moved to /etc/secrets/
+    # We check the Render secret path first, then fall back to the local path.
+    COOKIES_FILE = os.environ.get('YOUTUBE_COOKIES_FILE', 
+                                 '/etc/secrets/cookies.txt' if os.path.exists('/etc/secrets/cookies.txt') else 'cookies.txt')
     CORS_ORIGINS = [
         "https://bilalcode.site",
         "http://bilalcode.site",
