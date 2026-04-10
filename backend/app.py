@@ -18,7 +18,12 @@ def create_app():
     # Extensions
     db.init_app(app)
     jwt = JWTManager(app)
-    CORS(app, origins=Config.CORS_ORIGINS, supports_credentials=True)
+    # Aggressive CORS setup for production stability
+    CORS(app, 
+         origins=Config.CORS_ORIGINS, 
+         supports_credentials=True,
+         allow_headers=["*"],
+         methods=["*"])
 
     # JWT error handlers
     @jwt.unauthorized_loader
