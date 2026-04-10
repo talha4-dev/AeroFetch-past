@@ -1,9 +1,14 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
+import os
+import sys
+
+# Ensure backend directory is in path for imports
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from config import Config
 from models.user import db
-import os
 
 def create_app():
     app = Flask(__name__)
