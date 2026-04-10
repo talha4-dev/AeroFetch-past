@@ -58,22 +58,25 @@ def format_filesize(bytes_size):
 
 def get_cookies_path():
     """On Render, secret files are read-only. We copy them to /tmp to avoid [Errno 30]."""
-    original_path = Config.COOKIES_FILE
-    if not os.path.exists(original_path):
-        return None
-    
-    # If it's already in /tmp or not in a restricted area, just return it
-    if original_path.startswith('/tmp'):
-        return original_path
-        
-    temp_path = os.path.join('/tmp', 'aerofetch_cookies.txt')
     try:
+        original_path = Config.COOKIES_FILE
+        if not original_path or not os.path.exists(original_path):
+            return None
+        
+        # If it's already in /tmp, just return it
+        if original_path.startswith('/tmp'):
+            return original_path
+            
+        temp_path = os.path.join('/tmp', 'aerofetch_cookies.txt')
         import shutil
-        shutil.copy2(original_path, temp_path)
+        # Use copy instead of copy2 to avoid permission issues with metadata
+        shutil.copy(original_path, temp_path)
         return temp_path
     except Exception as e:
-        logger.error(f"Failed to copy cookies to /tmp: {e}")
-        return original_path
+        # Log the error but don't crash the whole process
+        if 'logger' in globals():
+            logger.error(f"Critical failure in get_cookies_path: {e}")
+        return None
 
 def get_video_info(url: str) -> dict:
     """
