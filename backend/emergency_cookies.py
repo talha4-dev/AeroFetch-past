@@ -34,7 +34,8 @@ def emergency_cookie_refresh():
 .youtube.com	TRUE	/	TRUE	1810224691	__Secure-1PAPISID	RiAmI5_9hFi1NsGI/ANgfVEVxp-DuCw9KN
 .youtube.com	TRUE	/	TRUE	1810224691	__Secure-3PAPISID	RiAmI5_9hFi1NsGI/ANgfVEVxp-DuCw9KN
 .youtube.com	TRUE	/	TRUE	1791271354	__Secure-BUCKET	CKQE
-.youtube.com	TRUE	/	TRUE	1810392693	PREF	f4=4000000&tz=America.Los_Angeles&f7=100
+.youtube.com	TRUE	/	TRUE	2147483647	CONSENT	YES+pk+20210328-17-p0.en+FX+100
+.youtube.com	TRUE	/	TRUE	1810392693	PREF	f4=4000000&tz=Asia.Karachi&f7=100&gl=PK&hl=en
 .youtube.com	TRUE	/	TRUE	1807372525	__Secure-1PSIDTS	sidts-CjQBWhotCYxcdpIgDKcK84CIxMAJYuiUWDB71FWbxuLxMiOjT01AWPUzOHV-OrgAUa03FNawEAA
 .youtube.com	TRUE	/	TRUE	1807372525	__Secure-3PSIDTS	sidts-CjQBWhotCYxcdpIgDKcK84CIxMAJYuiUWDB71FWbxuLxMiOjT01AWPUzOHV-OrgAUa03FNawEAA
 .youtube.com	TRUE	/	FALSE	1807372525	SIDCC	AKEyXzUdEBS2uLCPdwGeRh7vAtYAIkWC5cdHc0pZScrugwgrJNNniaXpoiu9h3iFXx72sNzMorw
