@@ -7,8 +7,10 @@ class Config:
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///aerofetch.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    DOWNLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'downloads')
-    LOG_FOLDER = os.path.join(os.path.dirname(__file__), 'logs')
+    # Use /tmp for writable folders on Render to avoid Read-Only file system errors
+    IS_RENDER = os.environ.get('RENDER', 'false').lower() == 'true'
+    DOWNLOAD_FOLDER = '/tmp/aerofetch_downloads' if IS_RENDER else os.path.join(os.path.dirname(__file__), 'downloads')
+    LOG_FOLDER = '/tmp/aerofetch_logs' if IS_RENDER else os.path.join(os.path.dirname(__file__), 'logs')
     MAX_CONTENT_LENGTH = 500 * 1024 * 1024  # 500MB max
     # Path to YouTube cookies file. On Render, secret files are moved to /etc/secrets/
     # We check the Render secret path first, then fall back to the local path.
@@ -45,5 +47,8 @@ class Config:
 
     @staticmethod
     def init_app(app):
-        os.makedirs(Config.DOWNLOAD_FOLDER, exist_ok=True)
-        os.makedirs(Config.LOG_FOLDER, exist_ok=True)
+        try:
+            os.makedirs(Config.DOWNLOAD_FOLDER, exist_ok=True)
+            os.makedirs(Config.LOG_FOLDER, exist_ok=True)
+        except Exception as e:
+            print(f"Warning: Could not create folders: {e}")

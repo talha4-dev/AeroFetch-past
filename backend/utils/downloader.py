@@ -13,14 +13,22 @@ else:
     # Linux (Render) uses system-installed ffmpeg
     FFMPEG_PATH = "ffmpeg"
 
-# Configure logging
-os.makedirs(Config.LOG_FOLDER, exist_ok=True)
-log_file = os.path.join(Config.LOG_FOLDER, 'downloader.log')
-logging.basicConfig(
-    filename=log_file,
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+# Configure logging safely
+try:
+    os.makedirs(Config.LOG_FOLDER, exist_ok=True)
+    log_file = os.path.join(Config.LOG_FOLDER, 'downloader.log')
+    logging.basicConfig(
+        filename=log_file,
+        level=logging.DEBUG,
+        format='%(asctime)s - %(levelname)s - %(message)s'
+    )
+except Exception as e:
+    # On some read-only systems, we'll just log to console
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s - %(levelname)s - %(message)s'
+    )
+    print(f"Warning: Falling back to console logging: {e}")
 logger = logging.getLogger('downloader')
 
 class YDLLogger:
