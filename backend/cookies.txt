@@ -1,25 +1,4 @@
-#!/usr/bin/env python3
-"""
-EMERGENCY YouTube cookie refresh for Pakistan
-"""
-import os
-import time
-from datetime import datetime
-
-def emergency_cookie_refresh():
-    print("🔄 EMERGENCY YouTube Cookie Refresh for Pakistan")
-    print("==============================================")
-    
-    # Backup existing cookies
-    cookie_file = 'cookies.txt'
-    if os.path.exists(cookie_file):
-        backup_name = f'cookies_backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}.txt'
-        os.rename(cookie_file, backup_name)
-        print(f"📦 Backed up existing cookies to: {backup_name}")
-    
-    # Create fresh Pakistan-specific cookies
-    with open(cookie_file, 'w') as f:
-        f.write("""# Netscape HTTP Cookie File
+# Netscape HTTP Cookie File
 # https://curl.haxx.se/rfc/cookie_spec.html
 # This is a generated file! Do not edit.
 
@@ -44,14 +23,3 @@ def emergency_cookie_refresh():
 .youtube.com	TRUE	/	TRUE	1791383311	VISITOR_PRIVACY_METADATA	CgJQSxIEGgAgHg%3D%3D
 .youtube.com	TRUE	/	TRUE	0	YSC	32KUC6IiVXg
 .youtube.com	TRUE	/	TRUE	1791363475	__Secure-ROLLOUT_TOKEN	CJbJ5a_ts_W6PxDgspmR08qTAxjg-7Ch9eKTAw%3D%3D
-""")
-    
-    print("✅ Fresh Pakistan-specific cookies created")
-    print("⚠️  IMPORTANT: You must LOGIN to YouTube and export FRESH cookies")
-    print("   using the 'Get cookies.txt' browser extension")
-    print("   Replace the auto-generated cookies with your actual login cookies")
-    
-    return True
-
-if __name__ == "__main__":
-    emergency_cookie_refresh()
