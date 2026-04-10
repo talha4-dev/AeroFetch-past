@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 import os
@@ -18,12 +18,23 @@ def create_app():
     # Extensions
     db.init_app(app)
     jwt = JWTManager(app)
-    # Aggressive CORS setup for production stability
+    
+    # Aggressive CORS setup with manual fallback
     CORS(app, 
          origins=Config.CORS_ORIGINS, 
          supports_credentials=True,
-         allow_headers=["*"],
-         methods=["*"])
+         allow_headers=["Content-Type", "Authorization", "Accept"],
+         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+
+    @app.after_request
+    def add_cors_headers(response):
+        origin = request.headers.get('Origin')
+        if origin in Config.CORS_ORIGINS:
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept'
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        return response
 
     # JWT error handlers
     @jwt.unauthorized_loader
