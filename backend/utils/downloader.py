@@ -74,26 +74,55 @@ def format_filesize(bytes_size):
         bytes_size /= 1024
     return f'{bytes_size:.1f} TB'
 
-def get_cookies_path():
-    """On Render, secret files are read-only. We copy them to /tmp to avoid [Errno 30]."""
+def validate_cookies(cookie_path):
+    """Validate cookies have required YouTube authentication"""
     try:
-        original_path = Config.COOKIES_FILE
-        if not original_path or not os.path.exists(original_path):
-            return None
-        
-        # If it's already in /tmp, just return it
-        if original_path.startswith('/tmp'):
-            return original_path
+        if not cookie_path or not os.path.exists(cookie_path):
+            return False
+        with open(cookie_path, 'r') as f:
+            content = f.read()
             
-        temp_path = os.path.join('/tmp', 'aerofetch_cookies.txt')
-        import shutil
-        # Use copy instead of copy2 to avoid permission issues with metadata
-        shutil.copy(original_path, temp_path)
-        return temp_path
+        # Check for ESSENTIAL cookies
+        required_cookies = ['CONSENT', 'LOGIN_INFO', 'PREF']
+        missing = [cookie for cookie in required_cookies if cookie not in content]
+        
+        if missing:
+            logger.warning(f"Missing required cookies: {missing}")
+            return False
+            
+        logger.info("Cookies validation passed - all essential cookies present")
+        return True
+        
     except Exception as e:
-        # Log the error but don't crash the whole process
-        if 'logger' in globals():
-            logger.error(f"Critical failure in get_cookies_path: {e}")
+        logger.error(f"Cookie validation failed: {e}")
+        return False
+
+def get_cookies_path():
+    """Get cookies path with validation and automatic fixes"""
+    try:
+        # On Render, secret files are read-only. We check the secret path first.
+        cookie_path = Config.COOKIES_FILE
+        
+        if not cookie_path or not os.path.exists(cookie_path):
+            logger.warning("No cookies file found at specified path")
+            return None
+            
+        # Validate cookies
+        if not validate_cookies(cookie_path):
+            logger.warning("Cookies validation failed - some essential cookies missing")
+            return None
+
+        # On Render, we copy to /tmp to ensure yt-dlp can handle it without permission issues
+        if os.environ.get('RENDER') == 'true' and not cookie_path.startswith('/tmp'):
+            temp_path = os.path.join('/tmp', 'aerofetch_cookies.txt')
+            import shutil
+            shutil.copy(original_path if 'original_path' in locals() else cookie_path, temp_path)
+            return temp_path
+            
+        return cookie_path
+        
+    except Exception as e:
+        logger.error(f"Cookie path error: {e}")
         return None
 
 def get_video_info(url: str) -> dict:
@@ -108,21 +137,25 @@ def get_video_info(url: str) -> dict:
         'skip_download': True,
         'check_formats': False,
         'nocheckcertificate': True,
-        'cache_dir': False, # Disable cache to avoid write errors
+        'cache_dir': False,
         'referer': 'https://www.youtube.com/',
         'extractor_args': {
             'youtube': {
-                'player_client': ['web', 'mweb'],
-                'include_dash_manifest': True,
-                'include_hls_manifest': True,
+                'player_client': ['android', 'web'],  # Use mobile and web clients
+                'skip': ['dash', 'hls'],  # Skip problematic formats
+                'include_dash_manifest': False,
+                'include_hls_manifest': False,
             }
         },
         'geo_bypass': True,
+        'geo_bypass_country': 'US',  # Match your cookies region
         'http_headers': {
-            'User-Agent': random.choice(USER_AGENTS),
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.9',
-            'Referer': 'https://www.facebook.com/' if 'facebook.com' in url else 'https://www.youtube.com/',
+            'Accept-Encoding': 'gzip, deflate',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
         },
         'ffmpeg_location': FFMPEG_PATH,
         'logger': YDLLogger(),
@@ -240,6 +273,7 @@ def download_video(url: str, format_id: str, output_format: str, quality: str) -
                 'preferredcodec': output_format if output_format != 'mp3' else 'mp3',
                 'preferredquality': '320' if 'best' in format_id.lower() else '128',
             }],
+            'cache_dir': False,
         }
     else:
         if '+' in format_id or format_id.startswith('best'):
