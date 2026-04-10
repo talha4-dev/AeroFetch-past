@@ -32,7 +32,7 @@ export default function AuthPage() {
         try {
             await loginWithGoogle(response.credential);
             addToast({ type: 'success', title: 'Welcome!', message: 'Signed in with Google.' });
-            navigate('/dashboard');
+            window.location.hash = '/dashboard';
         } catch (err) {
             const msg = err.response?.data?.error || 'Google sign-in failed. Please try again.';
             addToast({ type: 'error', title: 'Google Sign-In Failed', message: msg });
@@ -85,7 +85,8 @@ export default function AuthPage() {
                 await register(form.email, form.password, form.name);
                 addToast({ type: 'success', title: 'Account Created!', message: 'Welcome to AeroFetch!' });
             }
-            navigate('/dashboard');
+            // Use hash-based navigation for compatibility with createHashRouter
+            window.location.hash = '/dashboard';
         } catch (err) {
             const msg = err.response?.data?.error || 'Something went wrong. Please try again.';
             addToast({ type: 'error', title: mode === 'login' ? 'Login Failed' : 'Registration Failed', message: msg });

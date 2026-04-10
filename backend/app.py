@@ -51,10 +51,12 @@ def create_app():
     def not_found(e):
         return jsonify({'success': False, 'error': 'Endpoint not found'}), 404
 
-    # 500 handler
+    # 500 handler - helpful for debugging production crashes
     @app.errorhandler(500)
     def server_error(e):
-        return jsonify({'success': False, 'error': 'Internal server error'}), 500
+        # Fallback for unexpected crashes
+        msg = str(e.original_exception) if hasattr(e, 'original_exception') else str(e)
+        return jsonify({'success': False, 'error': f'Internal Server Error: {msg}'}), 500
 
     # Create tables
     with app.app_context():
