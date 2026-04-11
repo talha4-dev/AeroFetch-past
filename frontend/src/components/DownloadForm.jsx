@@ -112,9 +112,13 @@ export default function DownloadForm({ compact = false }) {
               
             const absoluteDownloadUrl = `${baseUrl}${streamUrl}`;
 
-            // Use window.open to navigate directly to the backend stream endpoint
-            // This works cross-origin because the backend sets Content-Disposition: attachment
-            window.open(absoluteDownloadUrl, '_blank');
+            // Create a hidden anchor element to trigger the download
+            const link = document.createElement('a');
+            link.href = absoluteDownloadUrl;
+            link.setAttribute('download', `${videoInfo.title || 'video'}.mp4`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
 
             setDownloadState('success');
             addToast({ type: 'success', title: 'Download Started!', message: `"${videoInfo.title}" is downloading.` });
