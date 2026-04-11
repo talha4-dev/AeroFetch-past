@@ -319,6 +319,3 @@ class YouTubeService {
 }
 
 module.exports = new YouTubeService();
-}
-
-module.exports = new YouTubeService();
