@@ -92,7 +92,8 @@ class YouTubeService {
             ? path.join(__dirname, '..', '..', 'bin', 'ffmpeg.exe') 
             : 'ffmpeg',
           mergeOutputFormat: 'mp4',
-          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          extractorArgs: 'youtube:player_client=web_embedded'
       };
 
       if (job.data.output_format && ['mp3', 'm4a'].includes(job.data.output_format)) {
@@ -198,21 +199,22 @@ class YouTubeService {
             noCheckCertificates: true,
             cookies: cookiesPath,
             format: 'all',
-            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            extractorArgs: 'youtube:player_client=web_embedded'
         });
 
         const formats_available = [];
         const seenResolutions = new Set();
 
         if (info.formats) {
-            // Sort by resolution (descending) and prioritize MP4/H.264 if multiple exist
+            // RELAXED FILTER: If it has height, it's a candidate for video
             const sortedFormats = info.formats
-                .filter(f => f.height && (f.vcodec !== 'none'))
-                .sort((a, b) => b.height - a.height);
+                .filter(f => f.height) 
+                .sort((a, b) => (b.height || 0) - (a.height || 0));
 
             sortedFormats.forEach(f => {
                 const res = `${f.height}p`;
-                if (!seenResolutions.has(res)) {
+                if (!seenResolutions.has(res) && f.height >= 144) {
                     seenResolutions.add(res);
                     formats_available.push({
                         id: f.format_id,
