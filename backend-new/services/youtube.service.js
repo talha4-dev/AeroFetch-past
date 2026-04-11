@@ -84,7 +84,7 @@ class YouTubeService {
           // Use a more resilient format selector
           format: job.data.format_id && job.data.format_id !== 'bestvideo+bestaudio'
             ? `${job.data.format_id}+bestaudio/best`
-            : 'bestvideo+bestaudio/best',
+            : 'bestvideo+bestaudio/bestvideo/bestaudio/best',
           output: tempPath,
           noWarnings: true,
           noCheckCertificates: true,
@@ -92,9 +92,7 @@ class YouTubeService {
             ? path.join(__dirname, '..', '..', 'bin', 'ffmpeg.exe') 
             : 'ffmpeg',
           mergeOutputFormat: 'mp4',
-          // SWITCH TO ANDROID IDENTITY FOR DOWNLOAD ONLY
-          userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
-          extractorArgs: 'youtube:player_client=android'
+          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
       };
 
       if (job.data.output_format && ['mp3', 'm4a'].includes(job.data.output_format)) {

@@ -84,11 +84,14 @@ export default function DownloadForm({ compact = false }) {
 
         const qualityObj = QUALITY_OPTIONS.find(q => q.value === selectedQuality);
         
-        // Find the format ID that matches the selected label (e.g., matching '4K' against '2160p')
+        // Map common UI terms to resolutions for robust matching
+        const resolutionMap = { '4k': '2160p', 'fhd': '1080p', 'hd': '720p', 'fhd+': '1440p' };
+        const targetRes = resolutionMap[selectedQuality.toLowerCase()] || selectedQuality.toLowerCase();
+
+        // Find the format ID that matches the selected resolution
         const formatId = videoInfo.formats?.find(f => {
             const labelLower = f.label.toLowerCase();
-            const selectedLower = selectedQuality.toLowerCase();
-            return labelLower.includes(selectedLower) || selectedLower.includes(labelLower);
+            return labelLower.includes(targetRes) || targetRes.includes(labelLower.replace('p', ''));
         })?.id || 'bestvideo+bestaudio';
 
         const outputFormat = qualityObj?.type === 'audio'
