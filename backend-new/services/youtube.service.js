@@ -203,110 +203,109 @@ class YouTubeService {
 
     // Real implementation
     try {
-        console.log(`🔍 Extracting metadata via live yt-dlp for: ${url}`);
-        
         // Try multiple locations for cookies.txt (local repo vs Render secret)
         const possibleCookiePaths = [
             path.join(__dirname, '..', 'cookies.txt'),
             path.join(process.cwd(), 'cookies.txt'),
             path.join(process.cwd(), 'backend-new', 'cookies.txt')
         ];
-        
         let cookiesPath = possibleCookiePaths.find(p => fs.existsSync(p));
-        
-        if (!cookiesPath) {
-            console.warn('⚠️ No cookies.txt found in any expected location. Metadata extraction might fail.');
-        } else {
-            console.log(`✅ Using cookies from: ${cookiesPath}`);
-        }
-        
-        const commonArgs = {
-            dumpSingleJson: true,
-            noWarnings: true,
-            noCheckCertificates: true,
-            format: 'all',
-            forceIpv4: true,
-            referer: 'https://www.youtube.com/',
-            geoBypass: true,
-            ignoreConfig: true,
-            formatSort: 'res,vcodec:h264,vcodec:avc,vcodec:h265,ext:mp4:m4a,quality',
-            userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.6167.164 Mobile Safari/537.36',
-            extractorArgs: 'youtube:player_client=android,web_embedded,mweb'
-        };
+        if (cookiesPath) console.log(`✅ Using cookies from: ${cookiesPath}`);
 
-        let info;
-        try {
-            console.log(`🔍 Attempting authenticated extraction for: ${url}`);
-            info = await youtubedl(url, { ...commonArgs, cookies: cookiesPath });
-        } catch (err) {
-            console.warn('⚠️ Authenticated extraction failed, trying fallback WITHOUT cookies...');
+        const clientIdentities = [
+            { id: 'Android Hybrid', args: 'youtube:player_client=android,web_embedded,mweb', ua: 'Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.6167.164 Mobile Safari/537.36' },
+            { id: 'Web Embedded', args: 'youtube:player_client=web_embedded,mweb', ua: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36' },
+            { id: 'TV Embedded', args: 'youtube:player_client=tv_embedded', ua: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36' },
+            { id: 'iOS App', args: 'youtube:player_client=ios', ua: 'com.google.ios.youtube/19.29.1 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X; en_US)' }
+        ];
+
+        let lastError = null;
+
+        for (const client of clientIdentities) {
             try {
-                info = await youtubedl(url, commonArgs);
-            } catch (fallbackErr) {
-                console.error('❌ Both authenticated and public extraction failed.');
-                throw fallbackErr;
-            }
-        }
+                console.log(`🔍 Attempting identity breakthrough [${client.id}] for: ${url}`);
+                
+                const commonArgs = {
+                    dumpSingleJson: true, noWarnings: true, noCheckCertificates: true, format: 'all',
+                    forceIpv4: true, referer: 'https://www.youtube.com/', geoBypass: true, ignoreConfig: true,
+                    formatSort: 'res,vcodec:h264,vcodec:avc,vcodec:h265,ext:mp4:m4a,quality',
+                    userAgent: client.ua, extractorArgs: client.args
+                };
 
-        const formats_available = [];
-        const seenResolutions = new Set();
-
-        if (info.formats) {
-            console.log(`📊 yt-dlp found ${info.formats.length} Raw Formats. Filtering...`);
-            
-            const sortedFormats = info.formats
-                .filter(f => f.height) 
-                .sort((a, b) => (b.height || 0) - (a.height || 0));
-
-            sortedFormats.forEach(f => {
-                const res = `${f.height}p`;
-                if (!seenResolutions.has(res) && f.height >= 144) {
-                    seenResolutions.add(res);
-                    formats_available.push({
-                        id: f.format_id,
-                        label: res,
-                        quality: res,
-                        format: f.ext || 'mp4',
-                        type: 'video',
-                        filesize: this.formatFilesize(f.filesize || f.filesize_approx)
-                    });
+                let info;
+                try {
+                    info = await youtubedl(url, cookiesPath ? { ...commonArgs, cookies: cookiesPath } : commonArgs);
+                } catch (authErr) {
+                    console.warn(`⚠️ Authenticated extraction failed with [${client.id}], trying public...`);
+                    info = await youtubedl(url, commonArgs);
                 }
-            });
-        }
 
-        // If NO video formats were found (YouTube is being restrictive), add a "Best Available" fallback
-        if (formats_available.filter(f => f.type === 'video').length === 0) {
-            console.warn('⚠️ No specific video resolutions detected. Adding "Best Quality" fallback.');
-            formats_available.push({
-                id: 'bestvideo+bestaudio/best',
-                label: 'Best Quality',
-                quality: 'Auto',
-                format: 'mp4',
-                type: 'video',
-                filesize: 'Unknown'
-            });
-        }
+                if (!info || !info.formats) {
+                    console.warn(`⚠️ [${client.id}] returned no formats.`);
+                    continue;
+                }
 
-        // Add standard audio option
-        formats_available.push({ id: 'bestaudio', label: 'Audio Only', quality: 'High', format: 'mp3', type: 'audio', filesize: 'Unknown' });
+                console.log(`📊 [${client.id}] found ${info.formats.length} raw formats.`);
+                
+                const formats_available = [];
+                const seenResolutions = new Set();
+                
+                const sortedFormats = info.formats
+                    .filter(f => f.height) 
+                    .sort((a, b) => (b.height || 0) - (a.height || 0));
 
-        let platformDisplay = info.extractor || 'Unknown';
-        if (platformDisplay.toLowerCase().includes('youtube')) platformDisplay = 'YouTube';
+                sortedFormats.forEach(f => {
+                    const res = `${f.height}p`;
+                    if (!seenResolutions.has(res) && f.height >= 144) {
+                        seenResolutions.add(res);
+                        formats_available.push({
+                            id: f.format_id,
+                            label: res,
+                            quality: res,
+                            format: f.ext || 'mp4',
+                            type: 'video',
+                            filesize: this.formatFilesize(f.filesize || f.filesize_approx)
+                        });
+                    }
+                });
 
-        return {
-            success: true,
-            data: {
-                title: info.title || 'Unknown Title',
-                thumbnail: info.thumbnail || '',
-                duration: this.formatDuration(info.duration),
-                uploader: info.uploader || 'Unknown',
-                view_count: info.view_count || 0,
-                formats: formats_available,
-                platform: platformDisplay
+                // Check for starvation (less than 4 formats often means only storyboards found)
+                if (formats_available.length === 0) {
+                    console.warn(`⚠️ [${client.id}] yielded 0 video resolutions. YouTube is likely starving this identity. Retrying...`);
+                    continue;
+                }
+
+                // Add standard audio option
+                formats_available.push({ id: 'bestaudio', label: 'Audio Only', quality: 'High', format: 'mp3', type: 'audio', filesize: 'Unknown' });
+
+                let platformDisplay = info.extractor_key || info.extractor || 'YouTube';
+                if (platformDisplay.toLowerCase().includes('youtube')) platformDisplay = 'YouTube';
+
+                console.log(`✅ Success! Breakthrough achieved with [${client.id}]`);
+
+                return {
+                    success: true,
+                    data: {
+                        title: info.title || 'Unknown Title',
+                        thumbnail: info.thumbnail || '',
+                        duration: this.formatDuration(info.duration),
+                        uploader: info.uploader || 'Unknown',
+                        view_count: info.view_count || 0,
+                        formats: formats_available,
+                        platform: platformDisplay,
+                        webpage_url: info.webpage_url
+                    }
+                };
+            } catch (err) {
+                lastError = err;
+                console.warn(`❌ Identity [${client.id}] failed: ${err.message}`);
+                continue;
             }
-        };
+        }
+
+        throw lastError || new Error('YouTube is currently restricting all known identities from accessing this media stream on this server.');
     } catch (err) {
-        console.error('yt-dlp info extraction error:', err.message);
+        console.error('yt-dlp recursive extraction error:', err.message);
         throw new Error('Failed to retrieve video metadata. Cookies may need refresh or link is invalid.');
     }
   }
