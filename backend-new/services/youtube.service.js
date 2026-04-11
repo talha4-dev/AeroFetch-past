@@ -77,8 +77,6 @@ class YouTubeService {
           output: tempPath,
           noWarnings: true,
           noCheckCertificates: true,
-          geoBypass: true,
-          geoBypassCountry: 'PK',
           ffmpegLocation: process.platform === 'win32' 
             ? path.join(__dirname, '..', '..', 'bin', 'ffmpeg.exe') 
             : 'ffmpeg',
