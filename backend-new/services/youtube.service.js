@@ -70,6 +70,12 @@ class YouTubeService {
       ];
       
       let cookiesPath = possibleCookiePaths.find(p => fs.existsSync(p));
+      
+      if (cookiesPath) {
+          const stats = fs.statSync(cookiesPath);
+          console.log(`✅ Cookie file size: ${stats.size} bytes`);
+          if (stats.size < 100) console.warn('⚠️ Cookie file seems suspiciously small. Did you paste the content correctly?');
+      }
 
       const opts = {
           cookies: cookiesPath,
@@ -82,8 +88,7 @@ class YouTubeService {
           ffmpegLocation: process.platform === 'win32' 
             ? path.join(__dirname, '..', '..', 'bin', 'ffmpeg.exe') 
             : 'ffmpeg',
-          // Only force H.264 if we are doing a generic "best" download
-          formatSort: job.data.format_id === 'bestvideo+bestaudio' ? 'vcodec:h264,res,acodec:m4a' : undefined,
+          mergeOutputFormat: 'mp4',
           userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
       };
 
