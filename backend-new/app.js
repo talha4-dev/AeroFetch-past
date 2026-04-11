@@ -1,10 +1,14 @@
 require('dotenv').config();
+console.log('--- STARTING AEROFETCH BACKEND ---');
 const express = require('express');
+console.log('✅ Express loaded');
 const morgan = require('morgan');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+console.log('✅ Base modules loaded');
 const { sequelize } = require('./models');
+console.log('✅ Database models loaded');
 
 if (process.env.USE_MOCK_REDIS === 'true') {
   console.log('🔄 Running in MOCK MODE - No Redis server required');
@@ -16,6 +20,7 @@ if (process.env.USE_SIMULATION === 'true') {
 
 const app = express();
 const PORT = process.env.PORT || 10000;
+console.log(`📡 Port selected: ${PORT}`);
 
 app.use(morgan('dev'));
 
