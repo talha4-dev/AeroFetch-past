@@ -94,8 +94,9 @@ class YouTubeService {
           mergeOutputFormat: 'mp4',
           forceIpv4: true,
           referer: 'https://www.youtube.com/',
-          youtubeSkipDashManifest: true,
           geoBypass: true,
+          ignoreConfig: true,
+          formatSort: 'res,vcodec:h264,vcodec:avc,vcodec:h265,ext:mp4:m4a,quality',
           userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.6167.164 Mobile Safari/537.36',
           extractorArgs: 'youtube:player_client=android,web_embedded,mweb'
       };
@@ -116,7 +117,7 @@ class YouTubeService {
           ? `${job.data.format_id}+bestaudio/best`
           : (job.data.format_id && job.data.format_id !== 'best' 
               ? job.data.format_id 
-              : 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best');
+              : 'bestvideo+bestaudio/best');
 
       // Stage 1: Attempt Authenticated Download (With Cookies)
       try {
@@ -226,8 +227,9 @@ class YouTubeService {
             format: 'all',
             forceIpv4: true,
             referer: 'https://www.youtube.com/',
-            youtubeSkipDashManifest: true,
             geoBypass: true,
+            ignoreConfig: true,
+            formatSort: 'res,vcodec:h264,vcodec:avc,vcodec:h265,ext:mp4:m4a,quality',
             userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.6167.164 Mobile Safari/537.36',
             extractorArgs: 'youtube:player_client=android,web_embedded,mweb'
         };
