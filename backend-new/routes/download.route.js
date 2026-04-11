@@ -46,13 +46,15 @@ router.get('/:jobId/stream', async (req, res) => {
         return res.redirect(job.returnvalue.download_url);
     }
 
-    const { tempPath, fileName } = job.returnvalue;
-    if (fs.existsSync(tempPath)) {
-        // Build a clean filename from the video title if available
-        const ext = require('path').extname(fileName) || '.mp4';
+        // Ensure we have a proper extension
+        let ext = require('path').extname(tempPath) || require('path').extname(fileName) || '.mp4';
+        if (ext === '.mhtml' || !ext) ext = '.mp4'; // Sanity check for bad guesses
+        
         const title = job.data.quality 
-          ? `aerofetch_${job.data.quality}${ext}`
-          : fileName;
+          ? `aerofetch_${job.data.quality.replace(/\s+/g, '_')}${ext}`
+          : fileName.includes('.') ? fileName : `${fileName}${ext}`;
+
+        res.setHeader('Content-Type', ext === '.mp3' ? 'audio/mpeg' : 'video/mp4');
         res.setHeader('Content-Disposition', `attachment; filename="${title}"`);
         res.download(tempPath, title);
     } else {
