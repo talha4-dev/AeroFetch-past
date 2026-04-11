@@ -88,7 +88,7 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static(frontendDist));
 
   // Catch-all: serve index.html for any non-API route (React Router support)
-  app.get('*', (req, res) => {
+  app.get('{*path}', (req, res) => {
     if (!req.path.startsWith('/api')) {
       res.sendFile(path.join(frontendDist, 'index.html'));
     }
