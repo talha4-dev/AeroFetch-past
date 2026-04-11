@@ -92,8 +92,8 @@ class YouTubeService {
             ? path.join(__dirname, '..', '..', 'bin', 'ffmpeg.exe') 
             : 'ffmpeg',
           mergeOutputFormat: 'mp4',
-          userAgent: 'com.google.ios.youtube/19.29.1 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X; en_US)',
-          extractorArgs: 'youtube:player_client=ios'
+          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          extractorArgs: 'youtube:player_client=tv,mweb,web'
       };
 
       if (job.data.output_format && ['mp3', 'm4a'].includes(job.data.output_format)) {
@@ -193,15 +193,28 @@ class YouTubeService {
             console.log(`✅ Using cookies from: ${cookiesPath}`);
         }
         
-        const info = await youtubedl(url, {
+        const commonArgs = {
             dumpSingleJson: true,
             noWarnings: true,
             noCheckCertificates: true,
-            cookies: cookiesPath,
             format: 'all',
-            userAgent: 'com.google.ios.youtube/19.29.1 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X; en_US)',
-            extractorArgs: 'youtube:player_client=ios'
-        });
+            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            extractorArgs: 'youtube:player_client=tv,mweb,web'
+        };
+
+        let info;
+        try {
+            console.log(`🔍 Attempting authenticated extraction for: ${url}`);
+            info = await youtubedl(url, { ...commonArgs, cookies: cookiesPath });
+        } catch (err) {
+            console.warn('⚠️ Authenticated extraction failed, trying fallback WITHOUT cookies...');
+            try {
+                info = await youtubedl(url, commonArgs);
+            } catch (fallbackErr) {
+                console.error('❌ Both authenticated and public extraction failed.');
+                throw fallbackErr;
+            }
+        }
 
         const formats_available = [];
         const seenResolutions = new Set();
