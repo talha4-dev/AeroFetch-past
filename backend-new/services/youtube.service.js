@@ -91,8 +91,7 @@ class YouTubeService {
             ? path.join(__dirname, '..', '..', 'bin', 'ffmpeg.exe') 
             : 'ffmpeg',
           mergeOutputFormat: 'mp4',
-          userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
-          extractorArgs: 'youtube:player_client=ios'
+          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
       };
 
       if (job.data.output_format && ['mp3', 'm4a'].includes(job.data.output_format)) {
@@ -188,8 +187,7 @@ class YouTubeService {
             noCheckCertificates: true,
             cookies: cookiesPath,
             format: 'all',
-            userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
-            extractorArgs: 'youtube:player_client=ios'
+            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         });
 
         const formats_available = [];
