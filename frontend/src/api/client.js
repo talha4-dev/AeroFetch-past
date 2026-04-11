@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://aerofetch-api-prod.onrender.com'),
+    baseURL: (window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1') ? 'http://localhost:10000' : 'https://aerofetch-api-prod.onrender.com'),
     headers: { 'Content-Type': 'application/json' },
     timeout: 180000, // Increase timeout to 3 mins for large video processing
 });

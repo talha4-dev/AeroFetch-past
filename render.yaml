@@ -1,14 +1,40 @@
 services:
+  # ── Backend API (Node.js) ──
   - type: web
     name: aerofetch-api-prod
-    runtime: python
+    runtime: node
     plan: free
-    buildCommand: pip install -r backend/requirements.txt
-    startCommand: gunicorn backend.app:app
+    rootDir: backend-new
+    buildCommand: |
+      npm install
+      apt-get update && apt-get install -y ffmpeg || true
+      pip install yt-dlp || npm install -g yt-dlp || curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp && chmod +x /usr/local/bin/yt-dlp
+    startCommand: node app.js
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.12.0
+      - key: NODE_ENV
+        value: production
       - key: PORT
         value: 10000
-      - key: RENDER_NIX_PACKAGES
-        value: ffmpeg
+      - key: USE_MOCK_REDIS
+        value: "true"
+      - key: USE_SIMULATION
+        value: "false"
+      - key: CORS_ORIGIN
+        value: "https://aerofetch.onrender.com"
+
+  # ── Frontend (Static Site) ──
+  - type: web
+    name: aerofetch
+    runtime: static
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=0, must-revalidate
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

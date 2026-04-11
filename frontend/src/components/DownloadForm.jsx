@@ -101,28 +101,32 @@ export default function DownloadForm({ compact = false }) {
         setDownloadState('processing');
 
         try {
-            const res = await api.post('/api/download/file', {
+            // New Unified API Contract Request
+            const res = await api.post('/api/download', {
                 url: url.trim(),
                 format_id: formatId,
                 output_format: outputFormat,
                 quality: selectedQuality,
-            }, { responseType: 'blob', timeout: 120000 });
+            });
 
             clearInterval(timer);
             setProgress(100);
 
-            // Trigger browser download
-            const blobUrl = window.URL.createObjectURL(new Blob([res.data]));
-            const link = document.createElement('a');
-            link.href = blobUrl;
-            const filename = videoInfo.title
-                ? `${videoInfo.title.replace(/[^\w\s-]/g, '').trim()}.${outputFormat}`
-                : `aerofetch_download.${outputFormat}`;
-            link.setAttribute('download', filename);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.URL.revokeObjectURL(blobUrl);
+            // Implement streaming proxy mechanism seamlessly
+            const streamUrl = res.data.download_url;
+            
+            // Build absolute URL based on api/client definition context or relative pathing natively
+            const baseUrl = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1') 
+              ? 'http://localhost:10000' 
+              : 'https://aerofetch-api-prod.onrender.com';
+              
+            const absoluteDownloadUrl = import.meta.env.VITE_API_URL 
+              ? `${import.meta.env.VITE_API_URL}${streamUrl}` 
+              : `${baseUrl}${streamUrl}`;
+
+            // Use window.open to navigate directly to the backend stream endpoint
+            // This works cross-origin because the backend sets Content-Disposition: attachment
+            window.open(absoluteDownloadUrl, '_blank');
 
             setDownloadState('success');
             addToast({ type: 'success', title: 'Download Started!', message: `"${videoInfo.title}" is downloading.` });
