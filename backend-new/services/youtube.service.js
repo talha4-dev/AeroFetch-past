@@ -12,6 +12,8 @@ class YouTubeService {
       console.log('🎭 YouTube Service in Simulation Mode');
     } else {
       console.log('🔥 YouTube Service in LIVE Mode (yt-dlp engine engaged)');
+      // Log yt-dlp version to see if it's outdated
+      youtubedl('--version').then(v => console.log(`🚀 yt-dlp version on server: ${v}`)).catch(e => console.warn('⚠️ Could not check yt-dlp version'));
     }
   }
 
@@ -89,8 +91,8 @@ class YouTubeService {
             ? path.join(__dirname, '..', '..', 'bin', 'ffmpeg.exe') 
             : 'ffmpeg',
           mergeOutputFormat: 'mp4',
-          userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
-          extractorArgs: 'youtube:player_client=android'
+          userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
+          extractorArgs: 'youtube:player_client=ios'
       };
 
       if (job.data.output_format && ['mp3', 'm4a'].includes(job.data.output_format)) {
@@ -186,8 +188,8 @@ class YouTubeService {
             noCheckCertificates: true,
             cookies: cookiesPath,
             format: 'all',
-            userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
-            extractorArgs: 'youtube:player_client=android'
+            userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
+            extractorArgs: 'youtube:player_client=ios'
         });
 
         const formats_available = [];
