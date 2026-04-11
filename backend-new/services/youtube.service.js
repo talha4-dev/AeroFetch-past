@@ -212,53 +212,59 @@ class YouTubeService {
         let cookiesPath = possibleCookiePaths.find(p => fs.existsSync(p));
         if (cookiesPath) console.log(`✅ Using cookies from: ${cookiesPath}`);
 
-        const clientIdentities = [
-            { id: 'Android Hybrid', args: 'youtube:player_client=android,web_embedded,mweb', ua: 'Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.6167.164 Mobile Safari/537.36' },
-            { id: 'Web Embedded', args: 'youtube:player_client=web_embedded,mweb', ua: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36' },
-            { id: 'TV Embedded', args: 'youtube:player_client=tv_embedded', ua: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36' },
-            { id: 'iOS App', args: 'youtube:player_client=ios', ua: 'com.google.ios.youtube/19.29.1 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X; en_US)' }
-        ];
+    const clientIdentities = [
+        { id: 'TV Breakthrough', args: 'youtube:player_client=tv_embedded,tv,web', ua: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36' },
+        { id: 'Android Hybrid', args: 'youtube:player_client=android,web_embedded,mweb', ua: 'Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.6167.164 Mobile Safari/537.36' },
+        { id: 'Web Embedded', args: 'youtube:player_client=web_embedded,mweb', ua: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36' },
+        { id: 'Legacy iOS', args: 'youtube:player_client=ios', ua: 'com.google.ios.youtube/19.29.1 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X; en_US)' }
+    ];
 
-        let lastError = null;
+    let lastError = null;
+    const randomIp = `157.245.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
 
-        for (const client of clientIdentities) {
+    for (const client of clientIdentities) {
+        try {
+            console.log(`🔍 Attempting breakthrough [${client.id}] for: ${url}`);
+            
+            const commonArgs = {
+                dumpSingleJson: true, noWarnings: true, noCheckCertificates: true, format: 'all',
+                forceIpv4: true, referer: 'https://www.youtube.com/', geoBypass: true, ignoreConfig: true,
+                addHeader: [
+                    `X-Forwarded-For: ${randomIp}`,
+                    'Accept-Language: en-US,en;q=0.9'
+                ],
+                formatSort: 'res,vcodec:h264,vcodec:avc,vcodec:h265,ext:mp4:m4a,quality',
+                userAgent: client.ua, extractorArgs: client.args
+            };
+
+            let info;
             try {
-                console.log(`🔍 Attempting identity breakthrough [${client.id}] for: ${url}`);
-                
-                const commonArgs = {
-                    dumpSingleJson: true, noWarnings: true, noCheckCertificates: true, format: 'all',
-                    forceIpv4: true, referer: 'https://www.youtube.com/', geoBypass: true, ignoreConfig: true,
-                    formatSort: 'res,vcodec:h264,vcodec:avc,vcodec:h265,ext:mp4:m4a,quality',
-                    userAgent: client.ua, extractorArgs: client.args
-                };
+                info = await youtubedl(url, cookiesPath ? { ...commonArgs, cookies: cookiesPath } : commonArgs);
+            } catch (authErr) {
+                console.warn(`⚠️ Breakthrough [${client.id}] failed with cookies, trying public fallback...`);
+                info = await youtubedl(url, commonArgs);
+            }
 
-                let info;
-                try {
-                    info = await youtubedl(url, cookiesPath ? { ...commonArgs, cookies: cookiesPath } : commonArgs);
-                } catch (authErr) {
-                    console.warn(`⚠️ Authenticated extraction failed with [${client.id}], trying public...`);
-                    info = await youtubedl(url, commonArgs);
-                }
+            if (!info || !info.formats) {
+                console.warn(`⚠️ [${client.id}] yielded no data.`);
+                continue;
+            }
 
-                if (!info || !info.formats) {
-                    console.warn(`⚠️ [${client.id}] returned no formats.`);
-                    continue;
-                }
+            console.log(`📊 [${client.id}] identified ${info.formats.length} streams.`);
+            
+            const candidateFormats = [];
+            const foundHeights = new Set();
+            
+            const sorted = info.formats
+                .filter(f => f.height || f.acodec !== 'none') 
+                .sort((a, b) => (b.height || 0) - (a.height || 0));
 
-                console.log(`📊 [${client.id}] found ${info.formats.length} raw formats.`);
-                
-                const formats_available = [];
-                const seenResolutions = new Set();
-                
-                const sortedFormats = info.formats
-                    .filter(f => f.height) 
-                    .sort((a, b) => (b.height || 0) - (a.height || 0));
-
-                sortedFormats.forEach(f => {
+            sorted.forEach(f => {
+                if (f.height) {
                     const res = `${f.height}p`;
-                    if (!seenResolutions.has(res) && f.height >= 144) {
-                        seenResolutions.add(res);
-                        formats_available.push({
+                    if (!foundHeights.has(res) && f.height >= 144) {
+                        foundHeights.add(res);
+                        candidateFormats.push({
                             id: f.format_id,
                             label: res,
                             quality: res,
@@ -267,48 +273,52 @@ class YouTubeService {
                             filesize: this.formatFilesize(f.filesize || f.filesize_approx)
                         });
                     }
-                });
-
-                // Check for starvation (less than 4 formats often means only storyboards found)
-                if (formats_available.length === 0) {
-                    console.warn(`⚠️ [${client.id}] yielded 0 video resolutions. YouTube is likely starving this identity. Retrying...`);
-                    continue;
                 }
+            });
 
-                // Add standard audio option
-                formats_available.push({ id: 'bestaudio', label: 'Audio Only', quality: 'High', format: 'mp3', type: 'audio', filesize: 'Unknown' });
-
-                let platformDisplay = info.extractor_key || info.extractor || 'YouTube';
-                if (platformDisplay.toLowerCase().includes('youtube')) platformDisplay = 'YouTube';
-
-                console.log(`✅ Success! Breakthrough achieved with [${client.id}]`);
-
-                return {
-                    success: true,
-                    data: {
-                        title: info.title || 'Unknown Title',
-                        thumbnail: info.thumbnail || '',
-                        duration: this.formatDuration(info.duration),
-                        uploader: info.uploader || 'Unknown',
-                        view_count: info.view_count || 0,
-                        formats: formats_available,
-                        platform: platformDisplay,
-                        webpage_url: info.webpage_url
-                    }
-                };
-            } catch (err) {
-                lastError = err;
-                console.warn(`❌ Identity [${client.id}] failed: ${err.message}`);
+            // If we have at least one valid video resolution, we've broken through
+            if (candidateFormats.length === 0) {
+                console.warn(`⚠️ [${client.id}] was starved by YouTube. Retrying...`);
                 continue;
             }
-        }
 
-        throw lastError || new Error('YouTube is currently restricting all known identities from accessing this media stream on this server.');
-    } catch (err) {
-        console.error('yt-dlp recursive extraction error:', err.message);
-        throw new Error('Failed to retrieve video metadata. Cookies may need refresh or link is invalid.');
+            // Add audio
+            candidateFormats.push({ id: 'bestaudio', label: 'Audio Only', quality: 'High', format: 'mp3', type: 'audio', filesize: 'Unknown' });
+
+            let extractor = info.extractor_key || info.extractor || 'YouTube';
+            if (extractor.toLowerCase().includes('youtube')) extractor = 'YouTube';
+
+            console.log(`✅ Success! Breakthrough confirmed with [${client.id}]`);
+
+            return {
+                success: true,
+                data: {
+                    title: info.title || 'Unknown Title',
+                    thumbnail: info.thumbnail || '',
+                    duration: this.formatDuration(info.duration),
+                    uploader: info.uploader || 'Unknown',
+                    view_count: info.view_count || 0,
+                    formats: candidateFormats,
+                    platform: extractor,
+                    webpage_url: info.webpage_url
+                }
+            };
+        } catch (err) {
+            lastError = err;
+            console.warn(`❌ [${client.id}] blocked: ${err.message}`);
+            continue;
+        }
     }
-  }
+
+    throw lastError || new Error('YouTube is currently blocking all access from this server location. Fresh cookies or a residential proxy may be required.');
+} catch (err) {
+    console.error('yt-dlp breakthrough error:', err.message);
+    throw new Error('Failed to retrieve video metadata. YouTube is blocking the server identity.');
+}
+}
+}
+
+module.exports = new YouTubeService();
 }
 
 module.exports = new YouTubeService();
