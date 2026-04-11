@@ -11,16 +11,14 @@ const PLATFORM_ICONS = {
     Instagram: '📸', 'Twitter/X': '🐦', Vimeo: '🎥', Dailymotion: '📺',
 };
 
-const QUALITY_OPTIONS = [
-    { value: '4K (2160p)', label: '4K Ultra HD', badge: '4K', type: 'video', color: '#ff6b6b' },
-    { value: '1080p Full HD', label: '1080p Full HD', badge: 'FHD', type: 'video', color: '#6c63ff' },
-    { value: '720p HD', label: '720p HD', badge: 'HD', type: 'video', color: '#9b8fff' },
-    { value: '480p', label: '480p SD', badge: '480p', type: 'video', color: '#00d4aa' },
-    { value: '360p', label: '360p Low', badge: '360p', type: 'video', color: '#8888aa' },
-    { value: 'MP3 Best Quality', label: 'MP3 320kbps', badge: 'MP3', type: 'audio', color: '#ff9f1c' },
-    { value: 'MP3 Standard', label: 'MP3 128kbps', badge: 'MP3', type: 'audio', color: '#ffd166' },
-    { value: 'M4A Best Quality', label: 'M4A Audio', badge: 'M4A', type: 'audio', color: '#06d6a0' },
-];
+const QUALITY_BADGES = {
+    '2160': { label: '4K Ultra HD', badge: '4K', color: '#ff6b6b' },
+    '1440': { label: '1440p QHD', badge: 'FHD+', color: '#6d5dfc' },
+    '1080': { label: '1080p Full HD', badge: 'FHD', color: '#6c63ff' },
+    '720': { label: '720p HD', badge: 'HD', color: '#9b8fff' },
+    '480': { label: '480p SD', badge: '480p', color: '#00d4aa' },
+    '360': { label: '360p Low', badge: '360p', color: '#8888aa' },
+};
 
 export default function DownloadForm({ compact = false }) {
     const { user } = useAuth();
@@ -82,22 +80,6 @@ export default function DownloadForm({ compact = false }) {
         if (!videoInfo) { addToast({ type: 'warning', title: 'Fetch first', message: 'Please fetch video info first' }); return; }
         if (!selectedQuality) { addToast({ type: 'warning', title: 'Select quality', message: 'Please choose a quality/format' }); return; }
 
-        const qualityObj = QUALITY_OPTIONS.find(q => q.value === selectedQuality);
-        
-        // Map common UI terms to resolutions for robust matching
-        const resolutionMap = { '4k': '2160p', 'fhd': '1080p', 'hd': '720p', 'fhd+': '1440p' };
-        const targetRes = resolutionMap[selectedQuality.toLowerCase()] || selectedQuality.toLowerCase();
-
-        // Find the format ID that matches the selected resolution
-        const formatId = videoInfo.formats?.find(f => {
-            const labelLower = f.label.toLowerCase();
-            return labelLower.includes(targetRes) || targetRes.includes(labelLower.replace('p', ''));
-        })?.id || 'bestvideo+bestaudio';
-
-        const outputFormat = qualityObj?.type === 'audio'
-            ? (selectedQuality.includes('M4A') ? 'm4a' : 'mp3')
-            : 'mp4';
-
         setDownloadState('loading');
         setProgress(0);
 
@@ -111,12 +93,10 @@ export default function DownloadForm({ compact = false }) {
         setDownloadState('processing');
 
         try {
-            // New Unified API Contract Request
             const res = await api.post('/api/download', {
                 url: url.trim(),
-                format_id: formatId,
-                output_format: outputFormat,
-                quality: selectedQuality,
+                format_id: selectedQuality.id,
+                output_format: selectedQuality.type === 'audio' ? 'mp3' : 'mp4'
             });
 
             clearInterval(timer);
@@ -239,15 +219,18 @@ export default function DownloadForm({ compact = false }) {
                             <div className="quality-group">
                                 <span className="quality-group-label">🎬 Video</span>
                                 <div className="quality-pills">
-                                    {QUALITY_OPTIONS.filter(q => q.type === 'video').map(q => {
+                                    {videoInfo.formats?.filter(f => f.type === 'video').map(f => {
+                                        const resKey = f.label.replace('p', '');
+                                        const badge = QUALITY_BADGES[resKey] || { badge: f.label, color: '#8888aa' };
+                                        
                                         return (
                                             <button
-                                                key={q.value}
-                                                className={`quality-pill${selectedQuality === q.value ? ' active' : ''}`}
-                                                onClick={() => setSelectedQuality(q.value)}
-                                                style={{ '--pill-color': q.color }}
+                                                key={f.id}
+                                                className={`quality-pill${selectedQuality?.id === f.id ? ' active' : ''}`}
+                                                onClick={() => setSelectedQuality(f)}
+                                                style={{ '--pill-color': badge.color }}
                                             >
-                                                {q.badge}
+                                                {badge.badge}
                                             </button>
                                         );
                                     })}
@@ -256,15 +239,15 @@ export default function DownloadForm({ compact = false }) {
                             <div className="quality-group">
                                 <span className="quality-group-label">🎵 Audio Only</span>
                                 <div className="quality-pills">
-                                    {QUALITY_OPTIONS.filter(q => q.type === 'audio').map(q => {
+                                    {videoInfo.formats?.filter(f => f.type === 'audio').map(f => {
                                         return (
                                             <button
-                                                key={q.value}
-                                                className={`quality-pill audio${selectedQuality === q.value ? ' active' : ''}`}
-                                                onClick={() => setSelectedQuality(q.value)}
-                                                style={{ '--pill-color': q.color }}
+                                                key={f.id}
+                                                className={`quality-pill audio${selectedQuality?.id === f.id ? ' active' : ''}`}
+                                                onClick={() => setSelectedQuality(f)}
+                                                style={{ '--pill-color': '#ff9f1c' }}
                                             >
-                                                {q.badge}
+                                                {f.format.toUpperCase()}
                                             </button>
                                         );
                                     })}
@@ -273,7 +256,7 @@ export default function DownloadForm({ compact = false }) {
                         </div>
                         {selectedQuality && (
                             <p className="quality-selected-info">
-                                Selected: <strong>{QUALITY_OPTIONS.find(q => q.value === selectedQuality)?.label}</strong>
+                                Selected: <strong>{selectedQuality.label}</strong> {selectedQuality.filesize && <span>({selectedQuality.filesize})</span>}
                             </p>
                         )}
                         {!user && (

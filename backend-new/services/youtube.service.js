@@ -103,10 +103,20 @@ class YouTubeService {
           opts.mergeOutputFormat = 'mp4';
       }
 
-      console.log(`🚀 Executing yt-dlp download for job ${job.id}`);
-      
       try {
-        await youtubedl(job.data.url, opts);
+        console.log(`🚀 Executing yt-dlp download for job ${job.id}`);
+        // If it's a specific numeric ID (like 313), we should try merging it with best audio
+        const formatStr = job.data.format_id && /^\d+$/.test(job.data.format_id)
+            ? `${job.data.format_id}+bestaudio/best`
+            : (job.data.format_id || 'bestvideo+bestaudio/bestvideo/bestaudio/best');
+
+        try {
+            await youtubedl(job.data.url, { ...opts, format: formatStr });
+        } catch (firstErr) {
+            console.warn(`⚠️ First download attempt failed for job ${job.id}, trying fallback to 'best'...`);
+            // Fallback to a single-file "best" which is often more likely to bypass cloud-IP blocks
+            await youtubedl(job.data.url, { ...opts, format: 'best' });
+        }
       } catch (err) {
         console.error('yt-dlp download error block:', err);
         throw new Error('yt-dlp process failed to download media. Cookies or format issue.');
@@ -192,28 +202,32 @@ class YouTubeService {
         });
 
         const formats_available = [];
-        const seen = new Set();
+        const seenResolutions = new Set();
 
         if (info.formats) {
-            info.formats.forEach(f => {
-                if (f.height && !f.is_dash && f.protocol !== 'm3u8_native') {
-                    const label = `${f.height}p`;
-                    if (!seen.has(label)) {
-                        seen.add(label);
-                        formats_available.push({
-                            id: f.format_id,
-                            label: label,
-                            quality: label,
-                            format: f.ext || 'mp4',
-                            type: 'video',
-                            filesize: this.formatFilesize(f.filesize)
-                        });
-                    }
+            // Sort by resolution (descending) and prioritize MP4/H.264 if multiple exist
+            const sortedFormats = info.formats
+                .filter(f => f.height && (f.vcodec !== 'none'))
+                .sort((a, b) => b.height - a.height);
+
+            sortedFormats.forEach(f => {
+                const res = `${f.height}p`;
+                if (!seenResolutions.has(res)) {
+                    seenResolutions.add(res);
+                    formats_available.push({
+                        id: f.format_id,
+                        label: res,
+                        quality: res,
+                        format: f.ext || 'mp4',
+                        type: 'video',
+                        filesize: this.formatFilesize(f.filesize || f.filesize_approx)
+                    });
                 }
             });
         }
 
-        formats_available.push({ id: 'bestaudio', label: 'MP3 Quality', quality: '320kbps', format: 'mp3', type: 'audio', filesize: 'Varies' });
+        // Add standard audio option
+        formats_available.push({ id: 'bestaudio', label: 'Audio Only', quality: 'High', format: 'mp3', type: 'audio', filesize: 'Unknown' });
 
         let platformDisplay = info.extractor || 'Unknown';
         if (platformDisplay.toLowerCase().includes('youtube')) platformDisplay = 'YouTube';
